@@ -1,16 +1,18 @@
 from dataloaders import get_iterators
 from pytorch_lightning import Trainer
 from pytorch_lightning.loggers import TensorBoardLogger
+from pytorch_lightning import utilities
 from models.mlp import MLP
 from argparse import ArgumentParser
 import os
 
 def main(args, avail_gpus):
+    utilities.seed.seed_everything(seed=args.seed)
 
     train_dl, val_dl = get_iterators(
         batch_size=args.batch_size,
         historical_len=args.historical_len,
-        include_last=False
+        include_last=False,
     )
 
     model = MLP(
@@ -57,7 +59,6 @@ if __name__ == '__main__':
                         choices=['pc_err', 'abs_err', 'mse'])
 
     parser.add_argument("--results_dir", default='Results', type=str)
-    parser.add_argument("--shuffle_dataset", default=True, type=bool)
     parser.add_argument("--seed", default=0, type=int)
 
     args = parser.parse_args()

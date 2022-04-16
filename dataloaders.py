@@ -92,7 +92,8 @@ def get_iterators(
         train_dataset,
         batch_size=batch_size,
         drop_last=True,
-        collate_fn=collate_batch
+        collate_fn=collate_batch,
+        shuffle=True
         )
     val_dataloader = DataLoader(
         val_dataset,
