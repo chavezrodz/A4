@@ -6,43 +6,6 @@ from utils.data_utils import gather_graph_data
 from sklearn.preprocessing import MinMaxScaler
 
 
-class StaticGraphDataset(Dataset):
-    def __init__(self, 
-                labels, 
-                node_features,
-                edge_features, 
-                prenormalized = True, 
-                prescaled = True):
-
-            
-        self.edge_features = torch.tensor(edge_features)
-        self.labels = torch.tensor(labels)
-        self.node_features = torch.tensor(node_features)
-
-        if not prenormalized: 
-
-            feat_mean = node_features.mean(axis=0)
-            feat_sdev = node_features.std(axis=0)
-
-            self.features = np.zeros(node_features.shape)
-            for i in range(node_features.shape[1]):
-                self.features[:, i] = (node_features[:, i] - feat_mean[i])/feat_sdev[i]
-            self.features = torch.tensor(self.features)
-            self.node_features = self.features
-
-        if not prescaled: 
-            for i in range(self.feautures.shape[0]):
-                scaler = MinMaxScaler()
-                self.features[i] = scaler.fit_transform(self.features[i])
-            self.node_features = self.features
-
-
-    def __len__(self):
-        return self.node_features.shape[0]
-
-    def __getitem__(self, idx):
-        return self.node_features[idx], self.edge_features[idx], self.labels[idx]
-
 
 class WeatherData(Dataset):
     def __init__(self, 
