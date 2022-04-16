@@ -1,10 +1,7 @@
-from cProfile import label
-from xml.etree.ElementInclude import include
 import numpy as np
 import torch
 from torch.utils.data import DataLoader, Dataset
 from torch.nn.utils.rnn import pad_sequence
-# from sklearn.preprocessing import MinMaxScaler
 import pandas as pd
 
 
@@ -86,7 +83,7 @@ def get_iterators(
         feature_batch = [item[0] for item in batch]
         lengths = [x.shape[0] for x in feature_batch]
         feature_batch = pad_sequence(feature_batch, batch_first=True)
-        labels_x_b = pad_sequence([item[1] for item in batch]).float()
+        labels_x_b = pad_sequence([item[1] for item in batch], batch_first=True).float()
         x = (feature_batch, labels_x_b, lengths)
         y = pad_sequence([item[2] for item in batch])       
         return x, y

@@ -1,2 +1,4 @@
 torch
 pandas
+pytorch_lightning
+pytorch_forecasting
