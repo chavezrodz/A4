@@ -54,20 +54,62 @@ class MLP(LightningModule):
 
     def training_step(self, batch, batch_idx):
         pred, y = self.predict_step(batch, batch_idx)
+        # metrics_P = self.get_metrics(pred[:, 0], y[:, 0])
+        # metrics_T = self.get_metrics(pred[:, 1], y[:, 1])
+        # metrics_rh = self.get_metrics(pred[:, 2], y[:, 2])
+        # metrics_wv = self.get_metrics(pred[:, 3], y[:, 3])
         metrics = self.get_metrics(pred, y)
         self.log_dict(
             {f'{k}/train': v for k, v in metrics.items()},
             on_epoch=True, on_step=False
             )
+
+        # self.log_dict(
+        #     {f'Pressure/{k}/train': v for k, v in metrics_P.items()},
+        #     on_epoch=True, on_step=False
+        #     )
+        # self.log_dict(
+        #     {f'Temperature/{k}/train': v for k, v in metrics_T.items()},
+        #     on_epoch=True, on_step=False
+        #     )
+        # self.log_dict(
+        #     {f'Relative_humidity/{k}/train': v for k, v in metrics_rh.items()},
+        #     on_epoch=True, on_step=False
+        #     )
+        # self.log_dict(
+        #     {f'Wind_Velocity/{k}/train': v for k, v in metrics_wv.items()},
+        #     on_epoch=True, on_step=False
+        #     )
+        
         return metrics[self.criterion]
 
     def validation_step(self, batch, batch_idx):
         pred, y = self.predict_step(batch, batch_idx)
         metrics = self.get_metrics(pred, y)
+        # # metrics_P = self.get_metrics(pred[:, 0], y[:, 0])
+        # # metrics_T = self.get_metrics(pred[:, 1], y[:, 1])
+        # # metrics_rh = self.get_metrics(pred[:, 2], y[:, 2])
+        # # metrics_wv = self.get_metrics(pred[:, 3], y[:, 3])
+        # # self.log_dict(
+        # #     {f'Pressure/{k}/validation': v for k, v in metrics_P.items()},
+        # #     on_epoch=True, on_step=False
+        # #     )
+        # # self.log_dict(
+        # #     {f'Temperature/{k}/validation': v for k, v in metrics_T.items()},
+        # #     on_epoch=True, on_step=False
+        # #     )
+        # # self.log_dict(
+        # #     {f'Relative_humidity/{k}/validation': v for k, v in metrics_rh.items()},
+        # #     on_epoch=True, on_step=False
+        # #     )
+        # # self.log_dict(
+        # #     {f'Wind_Velocity/{k}/validation': v for k, v in metrics_wv.items()},
+        # #     on_epoch=True, on_step=False
+        #     )
         self.log_dict(
             {f'{k}/validation': v for k, v in metrics.items()},
-            on_epoch=True
-        )
+            on_epoch=True, on_step=False
+            )
 
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(

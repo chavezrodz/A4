@@ -54,8 +54,9 @@ def get_iterators(
     '''
 
     df = pd.read_csv(data_file)
+    df['Date Time'] = df['Date Time'].apply(lambda x: int(x[-8:-6]))
     feat_cols = [
-        'Tpot (K)', 'Tdew (degC)',
+        'Date Time', 'Tpot (K)', 'Tdew (degC)',
         'VPmax (mbar)', 'VPact (mbar)', 'VPdef (mbar)',
         'sh (g/kg)', 'H2OC (mmol/mol)', 'rho (g/m**3)',
         'max. wv (m/s)', 'wd (deg)'
@@ -85,7 +86,7 @@ def get_iterators(
         feature_batch = pad_sequence(feature_batch, batch_first=True)
         labels_x_b = pad_sequence([item[1] for item in batch], batch_first=True).float()
         x = (feature_batch, labels_x_b, lengths)
-        y = pad_sequence([item[2] for item in batch])       
+        y = pad_sequence([item[2] for item in batch]).squeeze()
         return x, y
 
     train_dataloader = DataLoader(
@@ -93,13 +94,15 @@ def get_iterators(
         batch_size=batch_size,
         drop_last=True,
         collate_fn=collate_batch,
-        shuffle=True
+        shuffle=True,
+        num_workers=8
         )
     val_dataloader = DataLoader(
         val_dataset,
         batch_size=batch_size,
         drop_last=True,
-        collate_fn=collate_batch
+        collate_fn=collate_batch,
+        num_workers=8
         )
 
     return train_dataloader, val_dataloader
