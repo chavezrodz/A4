@@ -5,6 +5,15 @@ from torch.nn.utils.rnn import pad_sequence
 import pandas as pd
 
 
+def normalize_array(arr):
+    arr = torch.tensor(arr)
+    arr_mean = arr.mean(axis=0)
+    arr_std = arr.std(axis=0)
+    arr_normed = torch.zeros(arr.shape)
+    for i in range(arr.shape[1]):
+        arr_normed[:, i] = (arr[:, i] - arr_mean[i])/arr_std[i]
+    return arr_normed
+
 class WeatherData(Dataset):
     def __init__(self,
                  features, 
@@ -18,15 +27,9 @@ class WeatherData(Dataset):
         self.pred_len = prediction_len
         self.seq_len = historical_len + prediction_len
         self.include_last = include_last
-        features = torch.tensor(features)
-        self.labels = torch.tensor(labels)
 
-        feat_mean = features.mean(axis=0)
-        feat_sdev = features.std(axis=0)
-
-        self.features = torch.zeros(features.shape)
-        for i in range(features.shape[1]):
-            self.features[:, i] = (features[:, i] - feat_mean[i])/feat_sdev[i]
+        self.features = normalize_array(features)
+        self.labels = normalize_array(labels)
 
     def __len__(self):
         return len(self.labels - self.seq_len)
@@ -45,6 +48,7 @@ def get_iterators(
     batch_size,
     historical_len,
     include_last,
+    include_time,
     data_file='data/weather_train.csv',
     split=0.9,
     ):
@@ -54,13 +58,25 @@ def get_iterators(
     '''
 
     df = pd.read_csv(data_file)
-    df['Date Time'] = df['Date Time'].apply(lambda x: int(x[-8:-6]))
+
     feat_cols = [
-        'Date Time', 'Tpot (K)', 'Tdew (degC)',
+         'Tpot (K)', 'Tdew (degC)',
         'VPmax (mbar)', 'VPact (mbar)', 'VPdef (mbar)',
         'sh (g/kg)', 'H2OC (mmol/mol)', 'rho (g/m**3)',
         'max. wv (m/s)', 'wd (deg)'
         ]
+
+    if include_time:
+        df['day'] = df['Date Time'].apply(lambda x: float(x[0:2]))
+        df['month'] = df['Date Time'].apply(lambda x: int(x[3:5]))
+        df['day_normed'] = (df['day'] + df['month']*30)*2*np.pi/365.25
+        df['day_x'] = np.cos(df['day_normed'])
+        df['day_y'] = np.sin(df['day_normed'])
+        df['hr'] = df['Date Time'].apply(lambda x: int(x[-8:-6]))*2*np.pi/24
+        df['hr_x'] = np.cos(df['hr'])
+        df['hr_y'] = np.sin(df['hr'])
+        feat_cols += ['day_x', 'day_y', 'hr_x', 'hr_y']
+
     labels_cols = ['p (mbar)', 'T (degC)', 'rh (%)', 'wv (m/s)']
 
     features = df[feat_cols].values
@@ -79,7 +95,8 @@ def get_iterators(
 
 
     def collate_batch(batch):
-        '''Takes care of padding at end of sequence
+        '''
+        Takes care of padding at end of sequence
         '''
         feature_batch = [item[0] for item in batch]
         lengths = [x.shape[0] for x in feature_batch]

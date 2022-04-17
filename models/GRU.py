@@ -4,51 +4,61 @@ from pytorch_lightning import LightningModule
 from pytorch_forecasting.metrics import MAPE
 
 
-class MLP(LightningModule):
-    def __init__(
-        self,
-        hidden_dim,
-        n_layers,
-        input_dim,
-        output_dim,
-        lr,
-        amsgrad,
-        criterion
-    ):
+class GRU(LightningModule):
+    def __init__(self,
+                input_dim,
+                hidden_dim,
+                output_dim,
+                n_layers,
+                criterion, 
+                lr, 
+                amsgrad):
+
         super().__init__()
 
-        self.pc_err = MAPE()
-        self.abs_err = nn.L1Loss()
-        self.mse = nn.MSELoss()
+        self.in_dim = input_dim
+        self.hid_dim = hidden_dim
+        self.n_layers = n_layers
+        self.out_dim = output_dim
+
+        self.fc_in = nn.Linear(self.in_dim, self.hid_dim)
+        self.fc_out = nn.Linear(self.hid_dim, self.out_dim)
+
+        self.rnncell = nn.GRUCell(input_dim, hidden_dim, n_layers)
 
         self.criterion = criterion
         self.lr = lr
         self.amsgrad = amsgrad
 
-        self.mlp = nn.Sequential(
-            nn.Linear(input_dim, hidden_dim),
-            nn.ReLU()
-            )
-        for i in range(n_layers):
-            self.mlp.append(nn.Linear(hidden_dim, hidden_dim))
-            self.mlp.append(nn.ReLU())
-        self.mlp.append(nn.Linear(hidden_dim, output_dim))
+        self.pc_err = MAPE()
+        self.abs_err = nn.L1Loss()
+        self.mse = nn.MSELoss()
 
-    def forward(self, x):
-        (feats, labels) = x
+    def forward(self, X):
+        """
+        X : (node_features, edge_features, labels_x)
+        """
+        (feats, labels, lengths) = X
+        seq_len = feats.shape[1]
+        batch_size = feats.shape[0]
 
         x = torch.cat([feats, labels], dim=-1)
-        x = torch.flatten(x, -2, -1)
- 
-        return self.mlp(x).square()
+        h = torch.zeros(batch_size, self.hid_dim)
+        out_total= []
+        for i in range(seq_len):
+            h = self.rnncell(x[:, i], h)
+            out = self.fc_out(h)
+            out_total.append(out)
+
+        out_total = torch.stack(out_total)
+        out_total = torch.stack([out_total[lengths[j]-1, j]
+                        for j in range(batch_size)])
+
+        return out_total.squeeze()
 
     def predict_step(self, batch, batch_idx):
         x, y = batch
-        (feats, labels, lengths) = x
-        seq_len = feats.shape[1]
-        idx = [i for i, v in enumerate(lengths) if v == seq_len]
-        x = (feats[idx], labels[idx])
-        return self(x), y[idx]
+        return self(x), y
 
     def get_metrics(self, pred, y):
         metrics = dict(
@@ -81,5 +91,4 @@ class MLP(LightningModule):
             lr=self.lr,
             amsgrad=self.amsgrad
             )
-
         return optimizer
