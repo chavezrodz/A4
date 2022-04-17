@@ -4,6 +4,7 @@ from pytorch_lightning.loggers import TensorBoardLogger
 from pytorch_lightning import utilities
 from models.mlp import MLP
 from models.GRU import GRU
+from models.LSTM import LSTM
 from argparse import ArgumentParser
 import os
 
@@ -39,6 +40,17 @@ def main(args, avail_gpus):
             lr=args.lr,
             amsgrad=args.amsgrad
         )
+    elif args.model == 'LSTM':
+        model = LSTM(
+            input_dim=input_dim,
+            hidden_dim=args.hidden_dim,
+            output_dim=args.output_dim,
+            n_layers=args.n_layers,
+            criterion=args.criterion,
+            lr=args.lr,
+            amsgrad=args.amsgrad
+        )
+
     else:
         raise Exception('Model Not Found')
 
@@ -64,7 +76,7 @@ if __name__ == '__main__':
     AVAIL_GPUS = 0
 
     parser = ArgumentParser()
-    parser.add_argument("--model", default='GRU', type=str)
+    parser.add_argument("--model", default='LSTM', type=str)
     parser.add_argument("--n_layers", default=8, type=int)
     parser.add_argument("--hidden_dim", default=64, type=int)
     parser.add_argument("--output_dim", default=4, type=int)
@@ -76,11 +88,11 @@ if __name__ == '__main__':
     parser.add_argument("--lr", default=1e-2, type=float)
     parser.add_argument("--amsgrad", default=True, type=bool)
     parser.add_argument("--criterion", default='abs_err', type=str,
-                        choices=['pc_err', 'abs_err', 'mse'])
+                        choices=['pc_err', 'abs_err', 'mse', 'kl_div'])
 
     parser.add_argument("--results_dir", default='Results', type=str)
     parser.add_argument("--seed", default=0, type=int)
-    parser.add_argument("--fast_dev_run", default=False, type=bool)
+    parser.add_argument("--fast_dev_run", default=True, type=bool)
     args = parser.parse_args()
 
     main(args, AVAIL_GPUS)

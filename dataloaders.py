@@ -72,9 +72,14 @@ def get_iterators(
         df['day_normed'] = (df['day'] + df['month']*30)*2*np.pi/365.25
         df['day_x'] = np.cos(df['day_normed'])
         df['day_y'] = np.sin(df['day_normed'])
+
         df['hr'] = df['Date Time'].apply(lambda x: int(x[-8:-6]))*2*np.pi/24
         df['hr_x'] = np.cos(df['hr'])
         df['hr_y'] = np.sin(df['hr'])
+
+        df['wd_x'] = np.cos(df['wd (deg)']* 2*np.pi/360)
+        df['wd_y'] = np.sin(df['wd (deg)']* 2*np.pi/360)
+
         feat_cols += ['day_x', 'day_y', 'hr_x', 'hr_y']
 
     labels_cols = ['p (mbar)', 'T (degC)', 'rh (%)', 'wv (m/s)']

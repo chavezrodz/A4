@@ -4,7 +4,7 @@ from pytorch_lightning import LightningModule
 from pytorch_forecasting.metrics import MAPE
 
 
-class GRU(LightningModule):
+class LSTM(LightningModule):
     def __init__(self,
                 input_dim,
                 hidden_dim,
@@ -24,7 +24,7 @@ class GRU(LightningModule):
         self.fc_in = nn.Linear(self.in_dim, self.hid_dim)
         self.fc_out = nn.Linear(self.hid_dim, self.out_dim)
 
-        self.rnncell = nn.GRUCell(input_dim, hidden_dim)
+        self.rnncell = nn.LSTMCell(input_dim, hidden_dim)
 
         self.criterion = criterion
         self.lr = lr
@@ -44,9 +44,10 @@ class GRU(LightningModule):
 
         x = torch.cat([feats, labels], dim=-1)
         h = torch.zeros(batch_size, self.hid_dim)
+        c = torch.zeros(batch_size, self.hid_dim)
         out_total= []
         for i in range(seq_len):
-            h = self.rnncell(x[:, i], h)
+            h, c = self.rnncell(x[:, i], (h, c))
             out = self.fc_out(h)
             out_total.append(out)
 

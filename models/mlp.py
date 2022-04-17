@@ -20,6 +20,7 @@ class MLP(LightningModule):
         self.pc_err = MAPE()
         self.abs_err = nn.L1Loss()
         self.mse = nn.MSELoss()
+        self.kl = nn.KLDivLoss()
 
         self.criterion = criterion
         self.lr = lr
@@ -53,8 +54,10 @@ class MLP(LightningModule):
     def get_metrics(self, pred, y):
         metrics = dict(
             abs_err=self.abs_err(pred, y),
+            pressure_abs_err=self.abs_err(pred[:, 0], y[:, 0]),
             pc_err=self.pc_err(pred, y),
             mse=self.mse(pred, y),
+            kl_div=self.kl(pred, y)
         )
         return metrics
 
