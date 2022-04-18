@@ -81,7 +81,7 @@ def get_iterators(
         df['wd_x'] = np.cos(df['wd (deg)']* 2*np.pi/360)
         df['wd_y'] = np.sin(df['wd (deg)']* 2*np.pi/360)
 
-        feat_cols += ['day_x', 'day_y', 'hr_x', 'hr_y']
+        feat_cols += ['day_x', 'day_y', 'hr_x', 'hr_y', 'wd_x', 'wd_y']
 
     labels_cols = ['p (mbar)', 'T (degC)', 'rh (%)', 'wv (m/s)']
 

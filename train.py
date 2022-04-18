@@ -20,7 +20,7 @@ def main(args, avail_gpus):
         pred_len=args.pred_len
     )
 
-    input_dim = 18 if args.include_time else 14
+    input_dim = 20 if args.include_time else 14
 
     if args.model == 'mlp':
         model = MLP(
@@ -67,8 +67,6 @@ def main(args, avail_gpus):
             # criterion=args.criterion,
             # lr=args.lr,
             # amsgrad=args.amsgrad
-
-
         )        
     else:
         raise Exception('Model Not Found')
@@ -100,7 +98,7 @@ if __name__ == '__main__':
     parser.add_argument("--hidden_dim", default=64, type=int)
     parser.add_argument("--output_dim", default=4, type=int)
 
-    parser.add_argument("--include_time", default=False, type=bool)
+    parser.add_argument("--include_time", default=True, type=bool)
     parser.add_argument("--include_last", default=True, type=bool)
     parser.add_argument("--historical_len", default=4, type=int)
     parser.add_argument("--pred_len", default=3, type=int)
