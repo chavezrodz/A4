@@ -20,7 +20,7 @@ class WeatherData(Dataset):
                  labels,
                  include_last,
                  historical_len,
-                 prediction_len=1,
+                 prediction_len,
                  ):
         
         self.historical_len = historical_len
@@ -37,7 +37,7 @@ class WeatherData(Dataset):
     def __getitem__(self, idx):
         labels_x = self.labels[idx: idx + self.historical_len]
         if self.include_last:
-            features = self.features[idx: idx + self.historical_len + 1]
+            features = self.features[idx: idx + self.historical_len + self.pred_len]
         else:
             features = self.features[idx: idx + self.historical_len]
         labels_y = self.labels[idx + self.historical_len: idx + self.seq_len]
@@ -49,6 +49,7 @@ def get_iterators(
     historical_len,
     include_last,
     include_time,
+    pred_len,
     data_file='data/weather_train.csv',
     split=0.9,
     ):
@@ -91,7 +92,8 @@ def get_iterators(
         include_last=include_last,
         features=features, 
         labels=labels,
-        historical_len=historical_len
+        historical_len=historical_len,
+        prediction_len=pred_len
         )
 
     train_size = int(split * len(dataset))
@@ -108,7 +110,7 @@ def get_iterators(
         feature_batch = pad_sequence(feature_batch, batch_first=True)
         labels_x_b = pad_sequence([item[1] for item in batch], batch_first=True).float()
         x = (feature_batch, labels_x_b, lengths)
-        y = pad_sequence([item[2] for item in batch]).squeeze()
+        y = pad_sequence([item[2] for item in batch])
         return x, y
 
     train_dataloader = DataLoader(

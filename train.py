@@ -2,9 +2,10 @@ from dataloaders import get_iterators
 from pytorch_lightning import Trainer
 from pytorch_lightning.loggers import TensorBoardLogger
 from pytorch_lightning import utilities
-from models.mlp import MLP
+from models.MLP import MLP
 from models.GRU import GRU
 from models.LSTM import LSTM
+from models.Transformer import Seq2SeqTransformer
 from argparse import ArgumentParser
 import os
 
@@ -14,8 +15,9 @@ def main(args, avail_gpus):
     train_dl, val_dl = get_iterators(
         batch_size=args.batch_size,
         historical_len=args.historical_len,
-        include_last=False,
-        include_time=args.include_time
+        include_last=args.include_last,
+        include_time=args.include_time,
+        pred_len=args.pred_len
     )
 
     input_dim = 18 if args.include_time else 14
@@ -25,32 +27,49 @@ def main(args, avail_gpus):
             input_dim=args.historical_len*input_dim,
             output_dim=args.output_dim,
             hidden_dim=args.hidden_dim,
+            pred_len=args.pred_len,
             n_layers=args.n_layers,
             criterion=args.criterion,
             lr=args.lr,
             amsgrad=args.amsgrad
             )
-    elif args.model == 'GRU':
+    elif args.model == 'gru':
         model = GRU(
             input_dim=input_dim,
             hidden_dim=args.hidden_dim,
             output_dim=args.output_dim,
+            pred_len=args.pred_len,
             n_layers=args.n_layers,
             criterion=args.criterion,
             lr=args.lr,
             amsgrad=args.amsgrad
         )
-    elif args.model == 'LSTM':
+    elif args.model == 'lstm':
         model = LSTM(
             input_dim=input_dim,
             hidden_dim=args.hidden_dim,
             output_dim=args.output_dim,
+            pred_len=args.pred_len,
             n_layers=args.n_layers,
             criterion=args.criterion,
             lr=args.lr,
             amsgrad=args.amsgrad
         )
+    elif args.model == 'transformer':
+        model = Seq2SeqTransformer(
+            input_dim=input_dim,
+            hidden_dim=args.hidden_dim,
+            output_dim=args.output_dim,
+            # pred_len=args.pred_len,
+            n_layers=args.n_layers,
+            nhead=7,
+            
+            # criterion=args.criterion,
+            # lr=args.lr,
+            # amsgrad=args.amsgrad
 
+
+        )        
     else:
         raise Exception('Model Not Found')
 
@@ -76,13 +95,15 @@ if __name__ == '__main__':
     AVAIL_GPUS = 0
 
     parser = ArgumentParser()
-    parser.add_argument("--model", default='LSTM', type=str)
+    parser.add_argument("--model", default='lstm', type=str, choices=['gru', 'mlp', 'lstm'])
     parser.add_argument("--n_layers", default=8, type=int)
     parser.add_argument("--hidden_dim", default=64, type=int)
     parser.add_argument("--output_dim", default=4, type=int)
 
-    parser.add_argument("--include_time", default=True, type=bool)
+    parser.add_argument("--include_time", default=False, type=bool)
+    parser.add_argument("--include_last", default=True, type=bool)
     parser.add_argument("--historical_len", default=4, type=int)
+    parser.add_argument("--pred_len", default=3, type=int)
     parser.add_argument("--batch_size", default=512, type=int)
     parser.add_argument("--epochs", default=100, type=int)
     parser.add_argument("--lr", default=1e-2, type=float)

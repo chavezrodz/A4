@@ -9,6 +9,7 @@ class GRU(LightningModule):
                 input_dim,
                 hidden_dim,
                 output_dim,
+                pred_len,
                 n_layers,
                 criterion, 
                 lr, 
@@ -20,11 +21,7 @@ class GRU(LightningModule):
         self.hid_dim = hidden_dim
         self.n_layers = n_layers
         self.out_dim = output_dim
-
-        self.fc_in = nn.Linear(self.in_dim, self.hid_dim)
-        self.fc_out = nn.Linear(self.hid_dim, self.out_dim)
-
-        self.rnncell = nn.GRUCell(input_dim, hidden_dim)
+        self.pred_len = pred_len
 
         self.criterion = criterion
         self.lr = lr
@@ -33,39 +30,54 @@ class GRU(LightningModule):
         self.pc_err = MAPE()
         self.abs_err = nn.L1Loss()
         self.mse = nn.MSELoss()
+        self.kl = nn.KLDivLoss()
+
+        self.fc_in = nn.Linear(self.in_dim, self.hid_dim)
+        self.fc_out = nn.Linear(self.hid_dim, self.out_dim)
+
+        self.rnncell = nn.GRUCell(input_dim, hidden_dim)
+
 
     def forward(self, X):
         """
         X : (node_features, edge_features, labels_x)
         """
-        (feats, labels, lengths) = X
-        seq_len = feats.shape[1]
-        batch_size = feats.shape[0]
+        (feats, labels) = X
+        batch_size = labels.shape[0]
+        seq_len = labels.shape[1]
 
-        x = torch.cat([feats, labels], dim=-1)
+        prior_features = feats[:, :seq_len]
+        post_features = feats[:, seq_len:]
+
+        x = torch.cat([prior_features, labels], dim=-1)
         h = torch.zeros(batch_size, self.hid_dim)
-        out_total= []
+
         for i in range(seq_len):
             h = self.rnncell(x[:, i], h)
-            out = self.fc_out(h)
-            out_total.append(out)
+        ps_labels = self.fc_out(h)
+        out_total = [ps_labels]
+        for i in range(self.pred_len - 1):
+            x = torch.cat([post_features[:, i], ps_labels], dim=-1)
+            h = self.rnncell(x, h)
+            ps_labels = self.fc_out(h)
+            out_total.append(ps_labels)
 
-
-        out_total = torch.stack(out_total)
-        out_total = torch.stack([out_total[lengths[j]-1, j]
-                        for j in range(batch_size)])
-
-        return out_total.squeeze()
+        return torch.stack(out_total)
 
     def predict_step(self, batch, batch_idx):
         x, y = batch
-        return self(x), y
+        (feats, labels, lengths) = x
+        seq_len = feats.shape[1]
+        idx = [i for i, v in enumerate(lengths) if v == seq_len]
+        x = (feats[idx], labels[idx])
+        return self(x).flatten(-2, -1), y[:, idx].flatten(-2, -1)
 
     def get_metrics(self, pred, y):
         metrics = dict(
             abs_err=self.abs_err(pred, y),
             pc_err=self.pc_err(pred, y),
             mse=self.mse(pred, y),
+            kl_div=self.kl(pred, y)
         )
         return metrics
 
