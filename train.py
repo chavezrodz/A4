@@ -15,16 +15,12 @@ def main(args, avail_gpus):
     train_dl, val_dl = get_iterators(
         batch_size=args.batch_size,
         historical_len=args.historical_len,
-        include_last=args.include_last,
-        include_time=args.include_time,
         pred_len=args.pred_len
     )
 
-    input_dim = 20 if args.include_time else 14
-
     if args.model == 'mlp':
         model = MLP(
-            input_dim=args.historical_len*input_dim,
+            input_dim=args.historical_len*args.input_dim,
             output_dim=args.output_dim,
             hidden_dim=args.hidden_dim,
             pred_len=args.pred_len,
@@ -35,7 +31,7 @@ def main(args, avail_gpus):
             )
     elif args.model == 'gru':
         model = GRU(
-            input_dim=input_dim,
+            input_dim=args.input_dim,
             hidden_dim=args.hidden_dim,
             output_dim=args.output_dim,
             pred_len=args.pred_len,
@@ -46,7 +42,7 @@ def main(args, avail_gpus):
         )
     elif args.model == 'lstm':
         model = LSTM(
-            input_dim=input_dim,
+            input_dim=args.input_dim,
             hidden_dim=args.hidden_dim,
             output_dim=args.output_dim,
             pred_len=args.pred_len,
@@ -57,7 +53,7 @@ def main(args, avail_gpus):
         )
     elif args.model == 'transformer':
         model = Seq2SeqTransformer(
-            input_dim=input_dim,
+            input_dim=args.input_dim,
             hidden_dim=args.hidden_dim,
             output_dim=args.output_dim,
             # pred_len=args.pred_len,
@@ -95,11 +91,10 @@ if __name__ == '__main__':
     parser = ArgumentParser()
     parser.add_argument("--model", default='lstm', type=str, choices=['gru', 'mlp', 'lstm'])
     parser.add_argument("--n_layers", default=8, type=int)
+    parser.add_argument("--input_dim", default=19, type=int)
     parser.add_argument("--hidden_dim", default=64, type=int)
     parser.add_argument("--output_dim", default=4, type=int)
 
-    parser.add_argument("--include_time", default=True, type=bool)
-    parser.add_argument("--include_last", default=True, type=bool)
     parser.add_argument("--historical_len", default=4, type=int)
     parser.add_argument("--pred_len", default=3, type=int)
     parser.add_argument("--batch_size", default=512, type=int)

@@ -18,7 +18,6 @@ class WeatherData(Dataset):
     def __init__(self,
                  features, 
                  labels,
-                 include_last,
                  historical_len,
                  prediction_len,
                  ):
@@ -26,7 +25,6 @@ class WeatherData(Dataset):
         self.historical_len = historical_len
         self.pred_len = prediction_len
         self.seq_len = historical_len + prediction_len
-        self.include_last = include_last
 
         self.features = normalize_array(features)
         self.labels = normalize_array(labels)
@@ -36,10 +34,7 @@ class WeatherData(Dataset):
 
     def __getitem__(self, idx):
         labels_x = self.labels[idx: idx + self.historical_len]
-        if self.include_last:
-            features = self.features[idx: idx + self.historical_len + self.pred_len]
-        else:
-            features = self.features[idx: idx + self.historical_len]
+        features = self.features[idx: idx + self.historical_len + self.pred_len]
         labels_y = self.labels[idx + self.historical_len: idx + self.seq_len]
         return features, labels_x, labels_y
 
@@ -47,8 +42,6 @@ class WeatherData(Dataset):
 def get_iterators(
     batch_size,
     historical_len,
-    include_last,
-    include_time,
     pred_len,
     data_file='data/weather_train.csv',
     split=0.9,
@@ -64,24 +57,23 @@ def get_iterators(
          'Tpot (K)', 'Tdew (degC)',
         'VPmax (mbar)', 'VPact (mbar)', 'VPdef (mbar)',
         'sh (g/kg)', 'H2OC (mmol/mol)', 'rho (g/m**3)',
-        'max. wv (m/s)', 'wd (deg)'
+        'max. wv (m/s)'
         ]
 
-    if include_time:
-        df['day'] = df['Date Time'].apply(lambda x: float(x[0:2]))
-        df['month'] = df['Date Time'].apply(lambda x: int(x[3:5]))
-        df['day_normed'] = (df['day'] + df['month']*30)*2*np.pi/365.25
-        df['day_x'] = np.cos(df['day_normed'])
-        df['day_y'] = np.sin(df['day_normed'])
+    df['day'] = df['Date Time'].apply(lambda x: float(x[0:2]))
+    df['month'] = df['Date Time'].apply(lambda x: int(x[3:5]))
+    df['day_normed'] = (df['day'] + df['month']*30)*2*np.pi/365.25
+    df['day_x'] = np.cos(df['day_normed'])
+    df['day_y'] = np.sin(df['day_normed'])
 
-        df['hr'] = df['Date Time'].apply(lambda x: int(x[-8:-6]))*2*np.pi/24
-        df['hr_x'] = np.cos(df['hr'])
-        df['hr_y'] = np.sin(df['hr'])
+    df['hr'] = df['Date Time'].apply(lambda x: int(x[-8:-6]))*2*np.pi/24
+    df['hr_x'] = np.cos(df['hr'])
+    df['hr_y'] = np.sin(df['hr'])
 
-        df['wd_x'] = np.cos(df['wd (deg)']* 2*np.pi/360)
-        df['wd_y'] = np.sin(df['wd (deg)']* 2*np.pi/360)
+    df['wd_x'] = np.cos(df['wd (deg)']* 2*np.pi/360)
+    df['wd_y'] = np.sin(df['wd (deg)']* 2*np.pi/360)
 
-        feat_cols += ['day_x', 'day_y', 'hr_x', 'hr_y', 'wd_x', 'wd_y']
+    feat_cols += ['day_x', 'day_y', 'hr_x', 'hr_y', 'wd_x', 'wd_y']
 
     labels_cols = ['p (mbar)', 'T (degC)', 'rh (%)', 'wv (m/s)']
 
@@ -89,7 +81,6 @@ def get_iterators(
     labels = df[labels_cols].values
 
     dataset = WeatherData(
-        include_last=include_last,
         features=features, 
         labels=labels,
         historical_len=historical_len,
