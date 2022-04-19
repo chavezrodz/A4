@@ -9,7 +9,7 @@ from models.Seq2seq import FC_out, Seq_to_seq
 from argparse import ArgumentParser
 import os
 
-def main(args, avail_gpus):
+def main(args):
     utilities.seed.seed_everything(seed=args.seed)
 
     (train_dl, val_dl, test_dl), norm_constants = get_iterators(
@@ -68,7 +68,7 @@ def main(args, avail_gpus):
 
     trainer = Trainer(
         logger=logger,
-        gpus=avail_gpus,
+        gpus=args.avail_gpus,
         max_epochs=args.epochs,
         fast_dev_run=args.fast_dev_run
         )
@@ -80,8 +80,6 @@ def main(args, avail_gpus):
         )
 
 if __name__ == '__main__':
-    AVAIL_GPUS = 0
-
     parser = ArgumentParser()
     parser.add_argument("--model", default='gru', type=str, choices=['gru', 'mlp', 'lstm'])
     parser.add_argument("--n_layers", default=1, type=int)
@@ -102,7 +100,8 @@ if __name__ == '__main__':
     parser.add_argument("--datapath", default='data', type=str)
     parser.add_argument("--seed", default=0, type=int)
     parser.add_argument("--n_workers", default=8, type=int)
+    parser.add_argument("--avail_gpus", default=0, type=int)
     parser.add_argument("--fast_dev_run", default=False, type=bool)
     args = parser.parse_args()
 
-    main(args, AVAIL_GPUS)
+    main(args)
