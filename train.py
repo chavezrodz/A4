@@ -98,6 +98,7 @@ if __name__ == '__main__':
                         choices=['pc_err', 'abs_err', 'mse', 'kl_div'])
 
     parser.add_argument("--results_dir", default='Results', type=str)
+    parser.add_argument("--datapath", default='data', type=str)
     parser.add_argument("--seed", default=0, type=int)
     parser.add_argument("--n_workers", default=8, type=int)
     parser.add_argument("--fast_dev_run", default=False, type=bool)

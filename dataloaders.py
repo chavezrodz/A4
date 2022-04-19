@@ -88,6 +88,7 @@ def collate_batch(batch):
     return x, y
 
 def get_iterators(
+    datapath,
     batch_size,
     historical_len,
     pred_len,
@@ -95,8 +96,7 @@ def get_iterators(
     n_workers=8
     ):
 
-
-    train_file='data/weather_train.csv'
+    train_file=os.path.join(datapath, 'weather_train.csv')
     df = pd.read_csv(train_file)
     features, labels = process_df(df)
 
@@ -129,7 +129,7 @@ def get_iterators(
         num_workers=n_workers
         )
 
-    test_file='data/weather_test.csv'
+    test_file=os.path.join(datapath, 'weather_test.csv')
     df = pd.read_csv(test_file)
     features, labels = process_df(df)
 
