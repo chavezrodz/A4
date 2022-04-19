@@ -55,23 +55,23 @@ class Seq_to_seq(LightningModule):
         return self.core_model(X, self.fc_out)
 
     def scale_feats(self, feats):
-        mean = torch.tensor(self.norm_constants['feats_mean']).type_as(feats.type())
-        std = torch.tensor(self.norm_constants['feats_std']).type_as(feats.type())
+        mean = torch.tensor(self.norm_constants['feats_mean']).type_as(feats)
+        std = torch.tensor(self.norm_constants['feats_std']).type_as(feats)
         feats = feats - mean
         feats = feats/std
         return feats
 
     def scale_labels(self, labels):
-        mean = torch.tensor(self.norm_constants['labels_mean']).type_as(labels.type())
-        std = torch.tensor(self.norm_constants['labels_std']).type_as(labels.type())
+        mean = torch.tensor(self.norm_constants['labels_mean']).type_as(labels)
+        std = torch.tensor(self.norm_constants['labels_std']).type_as(labels)
 
         labels = labels - mean
         labels = labels/std
         return labels
 
     def unscale_labels(self, labels):
-        mean = torch.tensor(self.norm_constants['labels_mean']).type_as(labels.type())
-        std = torch.tensor(self.norm_constants['labels_std']).type_as(labels.type())
+        mean = torch.tensor(self.norm_constants['labels_mean']).type_as(labels)
+        std = torch.tensor(self.norm_constants['labels_std']).type_as(labels)
 
         labels = labels*std
         labels = labels + mean
