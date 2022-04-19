@@ -1,3 +1,4 @@
+from cProfile import label
 import numpy as np
 import torch
 from torch.utils.data import DataLoader, Dataset
@@ -26,8 +27,15 @@ class WeatherData(Dataset):
         self.pred_len = prediction_len
         self.seq_len = historical_len + prediction_len
 
-        self.features = normalize_array(features)
-        self.labels = normalize_array(labels)
+        self.features = torch.tensor(features).float()
+        self.labels = torch.tensor(labels).float()
+
+        self.norm_constants = dict(
+            feats_mean = self.features.mean(axis=0),
+            feats_std = self.features.std(axis=0),
+            labels_mean = self.labels.mean(axis=0),
+            labels_std = self.labels.std(axis=0)
+        )
 
     def __len__(self):
         return len(self.labels - self.seq_len)
@@ -39,20 +47,8 @@ class WeatherData(Dataset):
         return features, labels_x, labels_y
 
 
-def get_iterators(
-    batch_size,
-    historical_len,
-    pred_len,
-    data_file='data/weather_train.csv',
-    split=0.9,
-    ):
-
-    '''
-    Returns training and validation dataloaders
-    '''
-
-    df = pd.read_csv(data_file)
-
+def process_df(df):
+    labels_cols = ['p (mbar)', 'T (degC)', 'rh (%)', 'wv (m/s)']
     feat_cols = [
          'Tpot (K)', 'Tdew (degC)',
         'VPmax (mbar)', 'VPact (mbar)', 'VPdef (mbar)',
@@ -75,10 +71,34 @@ def get_iterators(
 
     feat_cols += ['day_x', 'day_y', 'hr_x', 'hr_y', 'wd_x', 'wd_y']
 
-    labels_cols = ['p (mbar)', 'T (degC)', 'rh (%)', 'wv (m/s)']
-
     features = df[feat_cols].values
     labels = df[labels_cols].values
+    return features, labels
+
+def collate_batch(batch):
+    '''
+    Takes care of padding at end of sequence
+    '''
+    feature_batch = [item[0] for item in batch]
+    lengths = [x.shape[0] for x in feature_batch]
+    feature_batch = pad_sequence(feature_batch, batch_first=True)
+    labels_x_b = pad_sequence([item[1] for item in batch], batch_first=True)
+    x = (feature_batch, labels_x_b, lengths)
+    y = pad_sequence([item[2] for item in batch]).float()
+    return x, y
+
+def get_iterators(
+    batch_size,
+    historical_len,
+    pred_len,
+    split=0.9,
+    n_workers=8
+    ):
+
+
+    train_file='data/weather_train.csv'
+    df = pd.read_csv(train_file)
+    features, labels = process_df(df)
 
     dataset = WeatherData(
         features=features, 
@@ -87,22 +107,11 @@ def get_iterators(
         prediction_len=pred_len
         )
 
+    norm_constants = dataset.norm_constants
+
     train_size = int(split * len(dataset))
-    test_size = len(dataset) - train_size
-    train_dataset, val_dataset = torch.utils.data.random_split(dataset, [train_size, test_size])
-
-
-    def collate_batch(batch):
-        '''
-        Takes care of padding at end of sequence
-        '''
-        feature_batch = [item[0] for item in batch]
-        lengths = [x.shape[0] for x in feature_batch]
-        feature_batch = pad_sequence(feature_batch, batch_first=True)
-        labels_x_b = pad_sequence([item[1] for item in batch], batch_first=True).float()
-        x = (feature_batch, labels_x_b, lengths)
-        y = pad_sequence([item[2] for item in batch])
-        return x, y
+    val_size = len(dataset) - train_size
+    train_dataset, val_dataset = torch.utils.data.random_split(dataset, [train_size, val_size])
 
     train_dataloader = DataLoader(
         train_dataset,
@@ -110,14 +119,35 @@ def get_iterators(
         drop_last=True,
         collate_fn=collate_batch,
         shuffle=True,
-        num_workers=8
+        num_workers=n_workers
         )
     val_dataloader = DataLoader(
         val_dataset,
         batch_size=batch_size,
         drop_last=True,
         collate_fn=collate_batch,
-        num_workers=8
+        num_workers=n_workers
         )
 
-    return train_dataloader, val_dataloader
+    test_file='data/weather_test.csv'
+    df = pd.read_csv(test_file)
+    features, labels = process_df(df)
+
+    test_dataset = WeatherData(
+        features=features, 
+        labels=labels,
+        historical_len=historical_len,
+        prediction_len=pred_len
+        )
+
+    test_dataloader = DataLoader(
+        test_dataset,
+        batch_size=batch_size,
+        drop_last=True,
+        collate_fn=collate_batch,
+        shuffle=True,
+        num_workers=n_workers
+        )
+
+
+    return (train_dataloader, val_dataloader, test_dataloader), norm_constants
