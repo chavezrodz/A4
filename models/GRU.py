@@ -17,9 +17,10 @@ class GRU(torch.nn.Module):
         self.pred_len = pred_len
         self.n_layers = n_layers
         
-        self.rnncell = nn.GRUCell(input_dim, hidden_dim)
+        self.encoder = nn.GRUCell(input_dim, hidden_dim)
+        self.decoder = nn.GRUCell(input_dim, hidden_dim)
 
-    def forward(self, X, decoder):
+    def forward(self, X, fc_out):
         (feats, labels) = X
         batch_size = labels.shape[0]
         seq_len = labels.shape[1]
@@ -31,13 +32,13 @@ class GRU(torch.nn.Module):
         h = torch.zeros(batch_size, self.hid_dim)
 
         for i in range(seq_len):
-            h = self.rnncell(x[:, i], h)
-        ps_labels = decoder(h)
+            h = self.encoder(x[:, i], h)
+        ps_labels = fc_out(h)
         out_total = [ps_labels]
         for i in range(self.pred_len - 1):
             x = torch.cat([post_features[:, i], ps_labels], dim=-1)
-            h = self.rnncell(x, h)
-            ps_labels = decoder(h)
+            h = self.decoder(x, h)
+            ps_labels = fc_out(h)
             out_total.append(ps_labels)
 
         return torch.stack(out_total)

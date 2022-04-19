@@ -3,41 +3,30 @@ import torch.nn as nn
 from pytorch_lightning import LightningModule
 from pytorch_forecasting.metrics import MAPE
 
-class Encoder(torch.nn.Module):
-    def __init__(
-        self, 
-        input_dim,
-        hidden_dim,
-        ):
-        super(Encoder, self).__init__()
-        self.in_dim = input_dim
-        self.hid_dim = hidden_dim
-        
-        self.fc_in = nn.Linear(self.in_dim, self.hid_dim)
-        self.fc_out = nn.Linear(self.hid_dim, self.out_dim)
 
-    def forward(self, X):
-        return self.fc_in(X)
-
-class Decoder(torch.nn.Module):
+class FC_out(torch.nn.Module):
     def __init__(
         self, 
         hidden_dim,
-        output_dim
+        output_dim,
+        n_layers=1
         ):
-        super(Decoder, self).__init__()
+        super(FC_out, self).__init__()
         self.hid_dim = hidden_dim
         self.out_dim = output_dim
-        self.fc_out = nn.Linear(self.hid_dim, self.out_dim)
+        self.n_layers = n_layers
+        
+        self.fc_out = nn.Linear(hidden_dim, output_dim)
 
     def forward(self, X):
         return self.fc_out(X)
 
 
+
 class Seq_to_seq(LightningModule):  
     def __init__(self,
                 core_model,
-                decoder,
+                fc_out,
                 criterion, 
                 lr, 
                 amsgrad,
@@ -45,7 +34,7 @@ class Seq_to_seq(LightningModule):
 
         super().__init__()
         self.core_model = core_model
-        self.decoder = decoder
+        self.fc_out = fc_out
 
         self.criterion = criterion
         self.lr = lr
@@ -59,7 +48,7 @@ class Seq_to_seq(LightningModule):
 
 
     def forward(self, X):
-        return self.core_model(X, self.decoder)
+        return self.core_model(X, self.fc_out)
 
     def scale_feats(self, feats):
         feats = feats - self.norm_constants['feats_mean']
@@ -83,11 +72,9 @@ class Seq_to_seq(LightningModule):
         seq_len = feats.shape[1]
         idx = [i for i, v in enumerate(lengths) if v == seq_len]
         feats, labels, y = feats[idx], labels[idx], y[:, idx]
-        # scaling inputs, descale output or scale target?
+        # scaling inputs
         x = (self.scale_feats(feats), self.scale_labels(labels))
-        pred = self(x)
-        y = self.scale_labels(y)
-        return pred.flatten(-2, -1), y.flatten(-2, -1)
+        return self(x), y
 
     def get_metrics(self, pred, y):
         metrics = dict(
@@ -100,7 +87,8 @@ class Seq_to_seq(LightningModule):
 
     def training_step(self, batch, batch_idx):
         pred, y = self.predict_step(batch, batch_idx)
-        metrics = self.get_metrics(pred, y)
+        y = self.scale_labels(y)
+        metrics = self.get_metrics(pred.flatten(-2, -1), y.flatten(-2, -1))
         self.log_dict(
             {f'{k}/train': v for k, v in metrics.items()},
             on_epoch=True, on_step=False
@@ -109,7 +97,8 @@ class Seq_to_seq(LightningModule):
 
     def validation_step(self, batch, batch_idx):
         pred, y = self.predict_step(batch, batch_idx)
-        metrics = self.get_metrics(pred, y)
+        y = self.scale_labels(y)
+        metrics = self.get_metrics(pred.flatten(-2, -1), y.flatten(-2, -1))
         self.log_dict(
             {f'{k}/validation': v for k, v in metrics.items()},
             on_epoch=True, on_step=False

@@ -5,7 +5,7 @@ from pytorch_lightning import utilities
 from models.MLP import MLP
 from models.GRU import GRU
 from models.LSTM import LSTM
-from models.Seq2seq import Seq_to_seq, Decoder
+from models.Seq2seq import FC_out, Seq_to_seq
 from argparse import ArgumentParser
 import os
 
@@ -16,7 +16,7 @@ def main(args, avail_gpus):
         batch_size=args.batch_size,
         historical_len=args.historical_len,
         pred_len=args.pred_len,
-        n_workers=8
+        n_workers=args.n_workers
     )
 
     if args.model == 'mlp':
@@ -46,14 +46,14 @@ def main(args, avail_gpus):
     else:
         raise Exception('Model Not Found')
 
-    decoder = Decoder(
+    fc_out = FC_out(
         hidden_dim=args.hidden_dim,
         output_dim=args.output_dim
     )
 
     Model = Seq_to_seq(
         core_model=core_model,
-        decoder=decoder,
+        fc_out=fc_out,
         criterion=args.criterion,
         lr=args.lr,
         amsgrad=args.amsgrad,
@@ -82,14 +82,14 @@ if __name__ == '__main__':
     AVAIL_GPUS = 0
 
     parser = ArgumentParser()
-    parser.add_argument("--model", default='gru', type=str, choices=['gru', 'mlp', 'lstm'])
-    parser.add_argument("--n_layers", default=8, type=int)
+    parser.add_argument("--model", default='mlp', type=str, choices=['gru', 'mlp', 'lstm'])
+    parser.add_argument("--n_layers", default=4, type=int)
     parser.add_argument("--input_dim", default=19, type=int)
     parser.add_argument("--hidden_dim", default=64, type=int)
     parser.add_argument("--output_dim", default=4, type=int)
 
     parser.add_argument("--historical_len", default=4, type=int)
-    parser.add_argument("--pred_len", default=3, type=int)
+    parser.add_argument("--pred_len", default=2, type=int)
     parser.add_argument("--batch_size", default=512, type=int)
     parser.add_argument("--epochs", default=100, type=int)
     parser.add_argument("--lr", default=1e-3, type=float)
@@ -99,7 +99,8 @@ if __name__ == '__main__':
 
     parser.add_argument("--results_dir", default='Results', type=str)
     parser.add_argument("--seed", default=0, type=int)
-    parser.add_argument("--fast_dev_run", default=False, type=bool)
+    parser.add_argument("--n_workers", default=8, type=int)
+    parser.add_argument("--fast_dev_run", default=True, type=bool)
     args = parser.parse_args()
 
     main(args, AVAIL_GPUS)
