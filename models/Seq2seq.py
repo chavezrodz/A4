@@ -55,18 +55,18 @@ class Seq_to_seq(LightningModule):
         return self.core_model(X, self.fc_out)
 
     def scale_feats(self, feats):
-        feats = feats - self.norm_constants['feats_mean']
-        feats = feats/self.norm_constants['feats_std']
+        feats = feats - self.norm_constants['feats_mean'].type_as(feats.type())
+        feats = feats/self.norm_constants['feats_std'].type_as(feats.type())
         return feats
 
     def scale_labels(self, labels):
-        labels = labels - self.norm_constants['labels_mean']
-        labels = labels/self.norm_constants['labels_std']
+        labels = labels - self.norm_constants['labels_mean'].type_as(labels.type())
+        labels = labels/self.norm_constants['labels_std'].type_as(labels.type())
         return labels
 
     def unscale_labels(self, labels):
-        labels = labels*self.norm_constants['labels_std']
-        labels = labels + self.norm_constants['labels_mean']
+        labels = labels*self.norm_constants['labels_std'].type_as(labels.type())
+        labels = labels + self.norm_constants['labels_mean'].type_as(labels.type())
         return labels
 
     def predict_step(self, batch, batch_idx):
