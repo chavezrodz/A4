@@ -13,6 +13,7 @@ def main(args, avail_gpus):
     utilities.seed.seed_everything(seed=args.seed)
 
     (train_dl, val_dl, test_dl), norm_constants = get_iterators(
+        datapath=args.datapath
         batch_size=args.batch_size,
         historical_len=args.historical_len,
         pred_len=args.pred_len,
