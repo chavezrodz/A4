@@ -82,8 +82,8 @@ if __name__ == '__main__':
     AVAIL_GPUS = 0
 
     parser = ArgumentParser()
-    parser.add_argument("--model", default='mlp', type=str, choices=['gru', 'mlp', 'lstm'])
-    parser.add_argument("--n_layers", default=4, type=int)
+    parser.add_argument("--model", default='gru', type=str, choices=['gru', 'mlp', 'lstm'])
+    parser.add_argument("--n_layers", default=1, type=int)
     parser.add_argument("--input_dim", default=19, type=int)
     parser.add_argument("--hidden_dim", default=64, type=int)
     parser.add_argument("--output_dim", default=4, type=int)
@@ -100,7 +100,7 @@ if __name__ == '__main__':
     parser.add_argument("--results_dir", default='Results', type=str)
     parser.add_argument("--seed", default=0, type=int)
     parser.add_argument("--n_workers", default=8, type=int)
-    parser.add_argument("--fast_dev_run", default=True, type=bool)
+    parser.add_argument("--fast_dev_run", default=False, type=bool)
     args = parser.parse_args()
 
     main(args, AVAIL_GPUS)

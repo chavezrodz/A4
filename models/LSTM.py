@@ -17,7 +17,8 @@ class LSTM(torch.nn.Module):
         self.pred_len = pred_len
         self.n_layers = n_layers
         
-        self.encoder = nn.LSTMCell(input_dim, hidden_dim)
+        self.encoder = nn.LSTM(input_dim, hidden_dim,
+                              num_layers=n_layers, batch_first=True)
         self.decoder = nn.LSTMCell(input_dim, hidden_dim)
 
     def forward(self, X, fc_out):
@@ -29,13 +30,11 @@ class LSTM(torch.nn.Module):
         post_features = feats[:, seq_len:]
 
         x = torch.cat([prior_features, labels], dim=-1)
-        h = torch.zeros(batch_size, self.hid_dim)
-        c = torch.zeros(batch_size, self.hid_dim)
 
-        for i in range(seq_len):
-            h, c = self.encoder(x[:, i], (h, c))
+        h = self.encoder(x)[0][:, -1]
         ps_labels = fc_out(h)
         out_total = [ps_labels]
+
         for i in range(self.pred_len - 1):
             x = torch.cat([post_features[:, i], ps_labels], dim=-1)
             h, c = self.decoder(x, (h,c))
