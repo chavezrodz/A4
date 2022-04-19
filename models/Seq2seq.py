@@ -16,7 +16,11 @@ class FC_out(torch.nn.Module):
         self.out_dim = output_dim
         self.n_layers = n_layers
         
-        self.fc_out = nn.Linear(hidden_dim, output_dim)
+        self.fc_out = nn.Sequential(
+            nn.Linear(hidden_dim, hidden_dim),
+            nn.ReLU(),
+            nn.Linear(hidden_dim, output_dim)
+            )
 
     def forward(self, X):
         return self.fc_out(X)
