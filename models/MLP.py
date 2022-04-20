@@ -32,7 +32,7 @@ class MLP(torch.nn.Module):
         out: batch x hidden
         """
         x = torch.flatten(x, -2, -1)
-        x = self.mlp(x).square()
+        x = self.mlp(x)
         return x
 
     def forward(self, x, fc_out):

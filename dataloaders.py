@@ -30,12 +30,18 @@ class WeatherData(Dataset):
         self.features = torch.tensor(features).float()
         self.labels = torch.tensor(labels).float()
 
-        self.norm_constants = dict(
-            feats_mean = self.features.mean(axis=0),
-            feats_std = self.features.std(axis=0),
-            labels_mean = self.labels.mean(axis=0),
-            labels_std = self.labels.std(axis=0)
-        )
+        self.norm_constants = {
+            'features':dict(
+                mean = self.features.mean(axis=0),
+                std = self.features.std(axis=0),
+                spread = self.features.amax(axis=0) - self.features.amin(axis=0),
+            ),
+            'labels':dict(
+                mean = self.labels.mean(axis=0),
+                std = self.labels.std(axis=0),
+                spread = self.labels.amax(axis=0) - self.labels.amin(axis=0)
+            )
+            }
 
     def __len__(self):
         return len(self.labels - self.seq_len)

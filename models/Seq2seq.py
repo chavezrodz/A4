@@ -34,7 +34,8 @@ class Seq_to_seq(LightningModule):
                 criterion, 
                 lr, 
                 amsgrad,
-                norm_constants):
+                norm_constants,
+                scale):
 
         super().__init__()
         self.core_model = core_model
@@ -44,6 +45,7 @@ class Seq_to_seq(LightningModule):
         self.lr = lr
         self.amsgrad = amsgrad
         self.norm_constants = norm_constants
+        self.scale = scale
 
         self.pc_err = MAPE()
         self.abs_err = nn.L1Loss()
@@ -54,28 +56,19 @@ class Seq_to_seq(LightningModule):
     def forward(self, X):
         return self.core_model(X, self.fc_out)
 
-    def scale_feats(self, feats):
-        mean = self.norm_constants['feats_mean'].type_as(feats)
-        std = self.norm_constants['feats_std'].type_as(feats)
-        feats = feats - mean
-        feats = feats/std
-        return feats
+    def scale_array(self, arr, which='features'):
+        mean = self.norm_constants[which]['mean'].type_as(arr)
+        scale = self.norm_constants[which][self.scale].type_as(arr)
+        arr = arr - mean
+        arr = arr/scale
+        return arr
 
-    def scale_labels(self, labels):
-        mean = self.norm_constants['labels_mean'].type_as(labels)
-        std = self.norm_constants['labels_std'].type_as(labels)
-
-        labels = labels - mean
-        labels = labels/std
-        return labels
-
-    def unscale_labels(self, labels):
-        mean = self.norm_constants['labels_mean'].type_as(labels)
-        std = self.norm_constants['labels_std'].type_as(labels)
-
-        labels = labels*std
-        labels = labels + mean
-        return labels
+    def unscale_arr(self, arr, which='labels'):
+        mean = self.norm_constants[which]['mean'].type_as(arr)
+        scale = self.norm_constants[which][self.scale].type_as(arr)
+        arr = arr*scale
+        arr = arr + mean
+        return arr
 
     def predict_step(self, batch, batch_idx):
         """
@@ -89,7 +82,10 @@ class Seq_to_seq(LightningModule):
         feats, labels, y = feats[idx], labels[idx], y[:, idx]
         batch_size = feats.shape[0]
         # scaling inputs
-        x = (self.scale_feats(feats), self.scale_labels(labels))
+        x = (
+            self.scale_array(feats, which='features'),
+            self.scale_array(labels, which='labels')
+            )
         out = self(x)
         assert out.shape[1] == batch_size
         return out.permute(1, 0, 2), y.permute(1, 0, 2)
@@ -106,7 +102,7 @@ class Seq_to_seq(LightningModule):
     def training_step(self, batch, batch_idx):
         pred, y = self.predict_step(batch, batch_idx)
         batch_size = pred.shape[0]
-        y = self.scale_labels(y)
+        y = self.scale_array(y, which='labels')
         metrics = self.get_metrics(pred.flatten(-2, -1), y.flatten(-2, -1))
         self.log_dict(
             {f'{k}/train': v for k, v in metrics.items()},
@@ -117,7 +113,7 @@ class Seq_to_seq(LightningModule):
     def validation_step(self, batch, batch_idx):
         pred, y = self.predict_step(batch, batch_idx)
         batch_size = pred.shape[0]
-        y = self.scale_labels(y)
+        y = self.scale_array(y, which='labels')
         metrics = self.get_metrics(pred.flatten(-2, -1), y.flatten(-2, -1))
         self.log_dict(
             {f'{k}/validation': v for k, v in metrics.items()},
@@ -134,7 +130,7 @@ class Seq_to_seq(LightningModule):
                 on_epoch=True, on_step=False, batch_size=batch_size
                 )
 
-        y = self.scale_labels(y)
+        y = self.scale_array(y, which='labels')
         metrics = self.get_metrics(pred.flatten(-2, -1), y.flatten(-2, -1))
         self.log_dict(
             {f'Total_scaled/{k}': v for k, v in metrics.items()},

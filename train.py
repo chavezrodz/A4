@@ -58,7 +58,8 @@ def main(args):
         criterion=args.criterion,
         lr=args.lr,
         amsgrad=args.amsgrad,
-        norm_constants=norm_constants
+        norm_constants=norm_constants,
+        scale=args.scale
     )
 
     logger = TensorBoardLogger(
@@ -80,8 +81,7 @@ def main(args):
         )
 
     if args.test:
-        out = trainer.test(Model, test_dl)
-        print(out)
+        trainer.test(Model, test_dl)
 
 if __name__ == '__main__':
     parser = ArgumentParser()
@@ -93,11 +93,12 @@ if __name__ == '__main__':
 
     parser.add_argument("--historical_len", default=4, type=int)
     parser.add_argument("--pred_len", default=1, type=int)
-    parser.add_argument("--batch_size", default=512, type=int)
+    parser.add_argument("--batch_size", default=1024, type=int)
     parser.add_argument("--epochs", default=100, type=int)
     parser.add_argument("--lr", default=1e-3, type=float)
     parser.add_argument("--amsgrad", default=True, type=bool)
-    parser.add_argument("--criterion", default='pc_err', type=str,
+    parser.add_argument("--scale", default='std', type=str, choices=['spread', 'std'])
+    parser.add_argument("--criterion", default='mse', type=str,
                         choices=['pc_err', 'abs_err', 'mse', 'kl_div'])
 
     parser.add_argument("--results_dir", default='Results', type=str)
@@ -106,7 +107,7 @@ if __name__ == '__main__':
     parser.add_argument("--n_workers", default=8, type=int)
     parser.add_argument("--avail_gpus", default=0, type=int)
     parser.add_argument("--test", default=True, type=bool)
-    parser.add_argument("--fast_dev_run", default=True, type=bool)
+    parser.add_argument("--fast_dev_run", default=False, type=bool)
     args = parser.parse_args()
 
     main(args)
