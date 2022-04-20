@@ -79,6 +79,10 @@ def main(args):
         val_dl
         )
 
+    if args.test:
+        out = trainer.test(Model, test_dl)
+        print(out)
+
 if __name__ == '__main__':
     parser = ArgumentParser()
     parser.add_argument("--model", default='gru', type=str, choices=['gru', 'mlp', 'lstm'])
@@ -88,7 +92,7 @@ if __name__ == '__main__':
     parser.add_argument("--output_dim", default=4, type=int)
 
     parser.add_argument("--historical_len", default=4, type=int)
-    parser.add_argument("--pred_len", default=2, type=int)
+    parser.add_argument("--pred_len", default=1, type=int)
     parser.add_argument("--batch_size", default=512, type=int)
     parser.add_argument("--epochs", default=100, type=int)
     parser.add_argument("--lr", default=1e-3, type=float)
@@ -101,7 +105,8 @@ if __name__ == '__main__':
     parser.add_argument("--seed", default=0, type=int)
     parser.add_argument("--n_workers", default=8, type=int)
     parser.add_argument("--avail_gpus", default=0, type=int)
-    parser.add_argument("--fast_dev_run", default=False, type=bool)
+    parser.add_argument("--test", default=True, type=bool)
+    parser.add_argument("--fast_dev_run", default=True, type=bool)
     args = parser.parse_args()
 
     main(args)

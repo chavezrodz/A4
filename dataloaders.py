@@ -126,6 +126,7 @@ def get_iterators(
         batch_size=batch_size,
         drop_last=True,
         collate_fn=collate_batch,
+        shuffle=False,
         num_workers=n_workers
         )
 
@@ -145,7 +146,7 @@ def get_iterators(
         batch_size=batch_size,
         drop_last=True,
         collate_fn=collate_batch,
-        shuffle=True,
+        shuffle=False,
         num_workers=n_workers
         )
 
