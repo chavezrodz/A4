@@ -98,7 +98,7 @@ if __name__ == '__main__':
     parser.add_argument("--lr", default=1e-3, type=float)
     parser.add_argument("--amsgrad", default=True, type=bool)
     parser.add_argument("--scale", default='std', type=str, choices=['spread', 'std'])
-    parser.add_argument("--criterion", default='mse', type=str,
+    parser.add_argument("--criterion", default='pc_err', type=str,
                         choices=['pc_err', 'abs_err', 'mse', 'kl_div'])
 
     parser.add_argument("--results_dir", default='Results', type=str)

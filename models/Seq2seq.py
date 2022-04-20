@@ -123,8 +123,9 @@ class Seq_to_seq(LightningModule):
     def test_step(self, batch, batch_idx):
         pred, y = self.predict_step(batch, batch_idx)
         batch_size = pred.shape[0]
+        pred_unscaled = self.unscale_arr(pred, which='labels')
         for i, feature in enumerate(['p (mbar)', 'T (degC)', 'rh (%)', 'wv (m/s)']):
-            metrics = self.get_metrics(pred[:, :, i], y[:, :, i])
+            metrics = self.get_metrics(pred_unscaled[:, :, i], y[:, :, i])
             self.log_dict(
                 {f'{feature}/{k}': v for k, v in metrics.items()},
                 on_epoch=True, on_step=False, batch_size=batch_size
