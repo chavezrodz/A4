@@ -86,15 +86,15 @@ def main(args):
 if __name__ == '__main__':
     parser = ArgumentParser()
     parser.add_argument("--model", default='gru', type=str, choices=['gru', 'mlp', 'lstm'])
-    parser.add_argument("--n_layers", default=1, type=int)
+    parser.add_argument("--n_layers", default=4, type=int)
     parser.add_argument("--input_dim", default=19, type=int)
     parser.add_argument("--hidden_dim", default=64, type=int)
     parser.add_argument("--output_dim", default=4, type=int)
 
-    parser.add_argument("--historical_len", default=4, type=int)
+    parser.add_argument("--historical_len", default=8, type=int)
     parser.add_argument("--pred_len", default=1, type=int)
-    parser.add_argument("--batch_size", default=1024, type=int)
-    parser.add_argument("--epochs", default=100, type=int)
+    parser.add_argument("--batch_size", default=2048, type=int)
+    parser.add_argument("--epochs", default=41, type=int)
     parser.add_argument("--lr", default=1e-3, type=float)
     parser.add_argument("--amsgrad", default=True, type=bool)
     parser.add_argument("--scale", default='std', type=str, choices=['spread', 'std'])
@@ -107,7 +107,7 @@ if __name__ == '__main__':
     parser.add_argument("--n_workers", default=8, type=int)
     parser.add_argument("--avail_gpus", default=0, type=int)
     parser.add_argument("--test", default=True, type=bool)
-    parser.add_argument("--fast_dev_run", default=False, type=bool)
+    parser.add_argument("--fast_dev_run", default=True, type=bool)
     args = parser.parse_args()
 
     main(args)

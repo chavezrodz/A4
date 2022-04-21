@@ -131,12 +131,19 @@ class Seq_to_seq(LightningModule):
                 on_epoch=True, on_step=False, batch_size=batch_size
                 )
 
+        metrics = self.get_metrics(pred_unscaled.flatten(-2, -1), y.flatten(-2, -1))
+        self.log_dict(
+            {f'Total_Unscaled/{k}': v for k, v in metrics.items()},
+            on_epoch=True, on_step=False, batch_size=batch_size
+            )
+
         y = self.scale_array(y, which='labels')
         metrics = self.get_metrics(pred.flatten(-2, -1), y.flatten(-2, -1))
         self.log_dict(
             {f'Total_scaled/{k}': v for k, v in metrics.items()},
             on_epoch=True, on_step=False, batch_size=batch_size
             )
+
 
 
     def configure_optimizers(self):
