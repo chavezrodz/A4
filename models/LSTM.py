@@ -35,10 +35,19 @@ class LSTM(torch.nn.Module):
         ps_labels = fc_out(h)
         out_total = [ps_labels]
 
-        for i in range(self.pred_len - 1):
-            x = torch.cat([post_features[:, i], ps_labels], dim=-1)
-            h, c = self.decoder(x, (h,c))
-            ps_labels = fc_out(h)
-            out_total.append(ps_labels)
+        if teacher:
+            for i in range(self.pred_len - 1):
+                x = torch.cat([post_features[:, i], y[:, i]], dim=-1)
+                h, c = self.decoder(x, (h,c))
+                ps_labels = fc_out(h)
+                out_total.append(ps_labels)
+
+
+        else:
+            for i in range(self.pred_len - 1):
+                x = torch.cat([post_features[:, i], ps_labels], dim=-1)
+                h, c = self.decoder(x, (h,c))
+                ps_labels = fc_out(h)
+                out_total.append(ps_labels)
 
         return torch.stack(out_total)

@@ -44,11 +44,20 @@ class MLP(torch.nn.Module):
 
         out_total = list()
         all_ts = torch.cat([prior_features, labels], dim=-1)
-        for i in range(self.pred_len):
-            prev_ts = all_ts[:, i:]
-            ps_labels = fc_out(self.pred_step(prev_ts))
-            out_total.append(ps_labels)
-            new_ts = torch.cat([post_features[:, i], ps_labels], dim=-1)
-            all_ts = torch.cat([all_ts, new_ts.unsqueeze(1)], dim=1)
+
+        if teacher:
+            for i in range(self.pred_len):
+                prev_ts = all_ts[:, i:]
+                ps_labels = fc_out(self.pred_step(prev_ts))
+                out_total.append(ps_labels)
+                new_ts = torch.cat([post_features[:, i], y[:, i]], dim=-1)
+                all_ts = torch.cat([all_ts, new_ts.unsqueeze(1)], dim=1)
+        else:
+            for i in range(self.pred_len):
+                prev_ts = all_ts[:, i:]
+                ps_labels = fc_out(self.pred_step(prev_ts))
+                out_total.append(ps_labels)
+                new_ts = torch.cat([post_features[:, i], ps_labels], dim=-1)
+                all_ts = torch.cat([all_ts, new_ts.unsqueeze(1)], dim=1)
 
         return torch.stack(out_total)
