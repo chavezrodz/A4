@@ -53,8 +53,8 @@ class Seq_to_seq(LightningModule):
         # self.kl = nn.KLDivLoss()
 
 
-    def forward(self, X):
-        return self.core_model(X, self.fc_out)
+    def forward(self, X, y):
+        return self.core_model(X, self.fc_out, y)
 
     def scale_array(self, arr, which='features'):
         mean = self.norm_constants[which]['mean'].type_as(arr)
@@ -81,14 +81,17 @@ class Seq_to_seq(LightningModule):
         idx = [i for i, v in enumerate(lengths) if v == seq_len]
         feats, labels, y = feats[idx], labels[idx], y[:, idx]
         batch_size = feats.shape[0]
+
+        # making it batch x pred x outdim
+        y = y.permute(1, 0, 2)
         # scaling inputs
         x = (
             self.scale_array(feats, which='features'),
             self.scale_array(labels, which='labels')
             )
-        out = self(x)
+        out = self(x, y)
         assert out.shape[1] == batch_size
-        return out.permute(1, 0, 2), y.permute(1, 0, 2)
+        return out.permute(1, 0, 2), y
 
     def get_metrics(self, pred, y):
         metrics = dict(
@@ -123,6 +126,7 @@ class Seq_to_seq(LightningModule):
     def test_step(self, batch, batch_idx):
         pred, y = self.predict_step(batch, batch_idx)
         batch_size = pred.shape[0]
+
         pred_unscaled = self.unscale_arr(pred, which='labels')
         for i, feature in enumerate(['p (mbar)', 'T (degC)', 'rh (%)', 'wv (m/s)']):
             metrics = self.get_metrics(pred_unscaled[:, :, i], y[:, :, i])

@@ -35,6 +35,7 @@ def main(args):
             output_dim=args.output_dim,
             pred_len=args.pred_len,
             n_layers=args.n_layers,
+            teacher_ratio=args.teacher_ratio
         )
     elif args.model == 'lstm':
         core_model = LSTM(
@@ -91,14 +92,15 @@ if __name__ == '__main__':
     parser.add_argument("--hidden_dim", default=64, type=int)
     parser.add_argument("--output_dim", default=4, type=int)
 
-    parser.add_argument("--historical_len", default=8, type=int)
-    parser.add_argument("--pred_len", default=1, type=int)
+    parser.add_argument("--teacher_ratio", default=1, type=float)
+    parser.add_argument("--historical_len", default=6, type=int)
+    parser.add_argument("--pred_len", default=6, type=int)
     parser.add_argument("--batch_size", default=2048, type=int)
     parser.add_argument("--epochs", default=41, type=int)
     parser.add_argument("--lr", default=1e-3, type=float)
     parser.add_argument("--amsgrad", default=True, type=bool)
     parser.add_argument("--scale", default='std', type=str, choices=['spread', 'std'])
-    parser.add_argument("--criterion", default='pc_err', type=str,
+    parser.add_argument("--criterion", default='mse', type=str,
                         choices=['pc_err', 'abs_err', 'mse', 'kl_div'])
 
     parser.add_argument("--results_dir", default='Results', type=str)
@@ -107,7 +109,7 @@ if __name__ == '__main__':
     parser.add_argument("--n_workers", default=8, type=int)
     parser.add_argument("--avail_gpus", default=0, type=int)
     parser.add_argument("--test", default=True, type=bool)
-    parser.add_argument("--fast_dev_run", default=True, type=bool)
+    parser.add_argument("--fast_dev_run", default=False, type=bool)
     args = parser.parse_args()
 
     main(args)
