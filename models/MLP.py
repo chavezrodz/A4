@@ -35,7 +35,7 @@ class MLP(torch.nn.Module):
         x = self.mlp(x)
         return x
 
-    def forward(self, x, fc_out, y):
+    def forward(self, x, fc_out, y, teacher):
         (feats, labels) = x
         seq_len = labels.shape[1]
 

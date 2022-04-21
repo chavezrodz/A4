@@ -8,8 +8,7 @@ class GRU(torch.nn.Module):
         hidden_dim,
         output_dim,
         pred_len,
-        n_layers,
-        teacher_ratio
+        n_layers
         ):
         super(GRU, self).__init__()
         self.in_dim = input_dim
@@ -17,13 +16,12 @@ class GRU(torch.nn.Module):
         self.out_dim = output_dim
         self.pred_len = pred_len
         self.n_layers = n_layers
-        self.teacher_ratio = teacher_ratio
         
         self.encoder = nn.GRU(input_dim, hidden_dim,
                               num_layers=n_layers, batch_first=True)
         self.decoder = nn.GRUCell(input_dim, hidden_dim)
 
-    def forward(self, X, fc_out, y):
+    def forward(self, X, fc_out, y, teacher):
         (feats, labels) = X
         batch_size = labels.shape[0]
         seq_len = labels.shape[1]
@@ -37,7 +35,7 @@ class GRU(torch.nn.Module):
         ps_labels = fc_out(h)
         out_total = [ps_labels]
 
-        if torch.rand(1) < self.teacher_ratio:
+        if teacher:
             for i in range(self.pred_len - 1):
                 x = torch.cat([post_features[:, i], y[:, i]], dim=-1)
                 h = self.decoder(x, h)

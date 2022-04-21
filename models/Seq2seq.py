@@ -35,12 +35,15 @@ class Seq_to_seq(LightningModule):
                 lr, 
                 amsgrad,
                 norm_constants,
-                scale):
+                scale,
+                teacher_ratio
+                ):
 
         super().__init__()
         self.core_model = core_model
         self.fc_out = fc_out
 
+        self.teacher_ratio = teacher_ratio
         self.criterion = criterion
         self.lr = lr
         self.amsgrad = amsgrad
@@ -53,8 +56,8 @@ class Seq_to_seq(LightningModule):
         # self.kl = nn.KLDivLoss()
 
 
-    def forward(self, X, y):
-        return self.core_model(X, self.fc_out, y)
+    def forward(self, X, y, teacher):
+        return self.core_model(X, self.fc_out, y, teacher)
 
     def scale_array(self, arr, which='features'):
         mean = self.norm_constants[which]['mean'].type_as(arr)
@@ -70,7 +73,7 @@ class Seq_to_seq(LightningModule):
         arr = arr + mean
         return arr
 
-    def predict_step(self, batch, batch_idx):
+    def predict_step(self, batch, batch_idx, teacher=False):
         """
         Returns batch x pred_len x out_dim
         """
@@ -89,7 +92,7 @@ class Seq_to_seq(LightningModule):
             self.scale_array(feats, which='features'),
             self.scale_array(labels, which='labels')
             )
-        out = self(x, y)
+        out = self(x, y, teacher)
         assert out.shape[1] == batch_size
         return out.permute(1, 0, 2), y
 
@@ -103,7 +106,8 @@ class Seq_to_seq(LightningModule):
         return metrics
 
     def training_step(self, batch, batch_idx):
-        pred, y = self.predict_step(batch, batch_idx)
+        use_teacher = torch.rand(1) < self.teacher_ratio
+        pred, y = self.predict_step(batch, batch_idx, use_teacher)
         batch_size = pred.shape[0]
         y = self.scale_array(y, which='labels')
         metrics = self.get_metrics(pred.flatten(-2, -1), y.flatten(-2, -1))

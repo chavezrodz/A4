@@ -21,7 +21,7 @@ class LSTM(torch.nn.Module):
                               num_layers=n_layers, batch_first=True)
         self.decoder = nn.LSTMCell(input_dim, hidden_dim)
 
-    def forward(self, X, fc_out, y):
+    def forward(self, X, fc_out, y, teacher):
         (feats, labels) = X
         batch_size = labels.shape[0]
         seq_len = labels.shape[1]
